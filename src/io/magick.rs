@@ -58,7 +58,7 @@ fn depth<T: Type, C: Color>(cmd: &mut Command) {
 /// ImageMagick
 pub const IM: Magick = Magick {
     identify: &["identify"],
-    convert: &["convert"],
+    convert: &["magick", "-flatten"],
 };
 
 /// GraphicsMagick
@@ -84,7 +84,7 @@ impl Magick {
     pub fn get_image_shape<P: AsRef<Path>>(&self, path: P) -> Result<(usize, usize), Error> {
         let identify = Command::new(self.identify[0])
             .args(self.identify[1..].iter())
-            .args(&["-format", "%w %h"])
+            .args(&["-format", "%w\n%h\n"])
             .arg(path.as_ref())
             .output();
 
@@ -99,7 +99,8 @@ impl Magick {
         };
 
         let t = shape
-            .split(' ')
+            .split('\n')
+            .take(2)
             .map(|a| a.trim().parse::<usize>())
             .collect::<Vec<Result<usize, ParseIntError>>>();
 
@@ -127,7 +128,7 @@ impl Magick {
 
         let kind = kind::<C>();
         let mut cmd = Command::new(self.convert[0]);
-        cmd.args(self.convert[1..].iter()).arg(path.as_ref());
+        cmd.arg(path.as_ref()).args(self.convert[1..].iter());
         depth::<T, C>(&mut cmd);
         cmd.arg(kind);
 
